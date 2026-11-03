@@ -13,6 +13,19 @@ export type Task = {
 const globalStore = globalThis as unknown as { tasks?: Task[] };
 const tasks = (globalStore.tasks ??= []);
 
+// Sample data to make testing easier.
+if (tasks.length === 0) {
+  const now = Date.now();
+  for (let i = 1; i <= 25; i++) {
+    tasks.push({
+      id: crypto.randomUUID(),
+      titulo: `Sample task ${i}`,
+      descricao: i % 3 === 0 ? undefined : `Description for sample task ${i}`,
+      dataCriacao: new Date(now - (26 - i) * 60_000),
+    });
+  }
+}
+
 const taskInput = z.object({
   titulo: z.string().trim().min(1, "Title is required"),
   descricao: z.string().trim().optional(),
