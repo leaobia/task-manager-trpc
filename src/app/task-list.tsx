@@ -48,7 +48,6 @@ export function TaskList({
   const remove = trpc.task.delete.useMutation({
     onSuccess: async () => {
       setFeedback({ ok: true, text: "Task deleted" });
-      // Refetch instead of editing the cache, so offset pagination stays consistent.
       await utils.task.list.invalidate();
     },
     onError: (error) =>

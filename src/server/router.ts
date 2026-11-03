@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createCallerFactory, publicProcedure, router } from "./trpc";
 
-export type Task = {
+type Task = {
   id: string;
   titulo: string;
   descricao?: string;
@@ -13,7 +13,6 @@ export type Task = {
 const globalStore = globalThis as unknown as { tasks?: Task[] };
 const tasks = (globalStore.tasks ??= []);
 
-// Sample data to make testing easier.
 if (tasks.length === 0) {
   const now = Date.now();
   for (let i = 1; i <= 25; i++) {
