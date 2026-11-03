@@ -5,8 +5,10 @@ import { createCaller } from "@/server/router";
 // The store is in memory and changes at runtime, so never prerender at build time.
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 10;
+
 export default async function Home() {
-  const initialData = await createCaller({}).task.list({ limit: 50 });
+  const initialData = await createCaller({}).task.list({ limit: PAGE_SIZE });
 
   return (
     <main className="mx-auto max-w-2xl p-6">
@@ -19,7 +21,7 @@ export default async function Home() {
           New task
         </Link>
       </div>
-      <TaskList initialData={initialData} />
+      <TaskList initialData={initialData} pageSize={PAGE_SIZE} />
     </main>
   );
 }

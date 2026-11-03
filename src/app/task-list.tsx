@@ -1,21 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/server/router";
 import { trpc } from "@/trpc/client";
 
 type ListData = inferRouterOutputs<AppRouter>["task"]["list"];
 
-export function TaskList({ initialData }: { initialData: ListData }) {
+export function TaskList({
+  initialData,
+  pageSize,
+}: {
+  initialData: ListData;
+  pageSize: number;
+}) {
   const utils = trpc.useUtils();
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(
     null,
   );
 
-  // Data comes from SSR; the query only takes over for refetches.
-  const list = trpc.task.list.useQuery({ limit: 50 }, { initialData });
+  // The SSR result seeds the first page. Cursors are offsets, so a refetch
+  // after a mutation rebuilds the pages from the start and stays consistent.
+  const list = trpc.task.list.useInfiniteQuery(
+    { limit: pageSize },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      initialData: { pages: [initialData], pageParams: [0] },
+    },
+  );
+
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const remove = trpc.task.delete.useMutation({
     onSuccess: async () => {
@@ -27,7 +55,7 @@ export function TaskList({ initialData }: { initialData: ListData }) {
       setFeedback({ ok: false, text: error.message || "Could not delete task" }),
   });
 
-  const tasks = list.data?.items ?? [];
+  const tasks = list.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <div>
@@ -92,6 +120,16 @@ export function TaskList({ initialData }: { initialData: ListData }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {tasks.length > 0 && (
+        <div ref={sentinelRef} className="py-4 text-center text-sm text-gray-500">
+          {list.isFetchingNextPage
+            ? "Loading more..."
+            : list.hasNextPage
+              ? null
+              : "No more tasks"}
+        </div>
       )}
     </div>
   );
