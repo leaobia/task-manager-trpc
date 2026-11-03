@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/server/router";
@@ -61,22 +62,33 @@ export function TaskList({ initialData }: { initialData: ListData }) {
                 {task.descricao && (
                   <p className="text-sm text-gray-600">{task.descricao}</p>
                 )}
-                <p
-                  suppressHydrationWarning
-                  className="mt-1 text-xs text-gray-500"
-                >
-                  {task.dataCriacao.toLocaleString("en-US")}
+                <p className="mt-1 text-xs text-gray-500">
+                  {task.dataCriacao.toLocaleString("en-US", {
+                    timeZone: "America/Sao_Paulo",
+                  })}
                 </p>
               </div>
-              <button
-                onClick={() => remove.mutate({ id: task.id })}
-                disabled={remove.isPending && remove.variables?.id === task.id}
-                className="rounded border px-2 py-1 text-sm hover:bg-gray-100 disabled:opacity-50"
-              >
-                {remove.isPending && remove.variables?.id === task.id
-                  ? "Deleting..."
-                  : "Delete"}
-              </button>
+              <div className="flex gap-2">
+                <Link
+                  href={`/tasks/${task.id}/edit`}
+                  className="rounded border px-2 py-1 text-sm hover:bg-gray-100"
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={() => {
+                    if (confirm("Delete this task?")) {
+                      remove.mutate({ id: task.id });
+                    }
+                  }}
+                  disabled={remove.isPending && remove.variables?.id === task.id}
+                  className="rounded border px-2 py-1 text-sm hover:bg-gray-100 disabled:opacity-50"
+                >
+                  {remove.isPending && remove.variables?.id === task.id
+                    ? "Deleting..."
+                    : "Delete"}
+                </button>
+              </div>
             </li>
           ))}
         </ul>
